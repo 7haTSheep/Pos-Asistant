@@ -9,7 +9,9 @@ class BarcodeScannerScreen extends StatefulWidget {
 }
 
 class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
-  final MobileScannerController _controller = MobileScannerController();
+  final MobileScannerController _controller = MobileScannerController(
+    detectionSpeed: DetectionSpeed.noDuplicates,
+  );
 
   @override
   void dispose() {
@@ -25,12 +27,15 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
       ),
       body: MobileScanner(
         controller: _controller,
-        allowDuplicates: false,
-        onDetect: (barcode, args) {
-          final String? rawValue = barcode.rawValue;
-          if (rawValue != null && rawValue.isNotEmpty) {
-            // Return the scanned code to previous screen
-            Navigator.of(context).pop(rawValue);
+        onDetect: (capture) {
+          final List<Barcode> barcodes = capture.barcodes;
+          for (final barcode in barcodes) {
+             final String? rawValue = barcode.rawValue;
+             if (rawValue != null && rawValue.isNotEmpty) {
+               // Return the scanned code to previous screen
+               Navigator.of(context).pop(rawValue);
+               break; // Return after first valid code
+             }
           }
         },
       ),
