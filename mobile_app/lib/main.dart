@@ -7,6 +7,9 @@ import 'package:barcode_widget/barcode_widget.dart';
 import 'screens/automation_screen.dart';
 import 'services/open_food_facts_service.dart';
 import 'screens/text_recognizer_screen.dart';
+import 'screens/smart_scanner_screen.dart';
+import 'screens/inventory_import_screen.dart';
+import 'screens/local_products_screen.dart';
 
 void main() {
   runApp(const ProviderScope(child: MyApp()));
@@ -187,6 +190,39 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => const AutomationScreen()),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.qr_code_scanner),
+              title: const Text('Smart Scanner'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const SmartScannerScreen()),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.file_upload),
+              title: const Text('Import Inventory'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const InventoryImportScreen()),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.dataset),
+              title: const Text('Local Products'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const LocalProductsScreen()),
                 );
               },
             ),

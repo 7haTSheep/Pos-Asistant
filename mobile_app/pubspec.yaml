@@ -40,8 +40,18 @@ dependencies:
   barcode_widget: ^2.0.4
   google_mlkit_text_recognition: ^0.14.0
   image_picker: ^1.1.2
+  file_picker: ^10.3.10
+  # Database and image storage
+  drift: ^2.22.0
+  drift_flutter: ^0.2.0
+  path_provider: ^2.1.2
+  crypto: ^3.0.3
+  image: ^4.2.0
 
 dev_dependencies:
+  # Drift code generation
+  drift_dev: ^2.22.0
+  build_runner: ^2.4.8
   flutter_test:
     sdk: flutter
 

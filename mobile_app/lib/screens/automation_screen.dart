@@ -42,10 +42,10 @@ class _AutomationScreenState extends State<AutomationScreen> {
   Future<void> _fetchStatus() async {
     final status = await _service.getStatus();
     if (mounted) {
-      setState(() => {
-            _isActive = status['active'] ?? false,
-            _remainingSeconds = status['remaining_seconds'] ?? 0,
-          });
+      setState(() {
+        _isActive = status['active'] ?? false;
+        _remainingSeconds = status['remaining_seconds'] ?? 0;
+      });
     }
   }
 
@@ -115,7 +115,10 @@ class _AutomationScreenState extends State<AutomationScreen> {
                 ),
                 child: _isLoading
                     ? const SizedBox(
-                        height: 24, width: 24, child: CircularProgressIndicator(color: Colors.white))
+                        height: 24,
+                        width: 24,
+                        child: CircularProgressIndicator(color: Colors.white),
+                      )
                     : Text(
                         _isActive ? 'Stop Session' : 'Start 40m Session',
                         style: const TextStyle(fontSize: 18),

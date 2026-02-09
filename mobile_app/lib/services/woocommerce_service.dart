@@ -14,6 +14,58 @@ class WooCommerceService {
     return 'Basic ${base64.encode(bytes)}';
   }
 
+  Future<Map<String, dynamic>?> getProductBySku(String sku) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/wp-json/wc/v3/products?sku=$sku'),
+        headers: {HttpHeaders.authorizationHeader: _authHeader},
+      );
+
+      if (response.statusCode == 200) {
+        final List products = jsonDecode(response.body);
+        if (products.isNotEmpty) {
+          return products.first;
+        }
+      }
+    } catch (e) {
+      print('Error finding product by SKU: $e');
+    }
+    return null;
+  }
+
+  Future<List<dynamic>> searchProducts(String query) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/wp-json/wc/v3/products?search=$query'),
+        headers: {HttpHeaders.authorizationHeader: _authHeader},
+      );
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+    } catch (e) {
+      print('Error searching products: $e');
+    }
+    return [];
+  }
+
+  Future<bool> updateProduct(int id, Map<String, dynamic> data) async {
+    try {
+      final response = await http.put(
+        Uri.parse('$baseUrl/wp-json/wc/v3/products/$id'),
+        headers: {
+          HttpHeaders.authorizationHeader: _authHeader,
+          HttpHeaders.contentTypeHeader: 'application/json',
+        },
+        body: jsonEncode(data),
+      );
+      return response.statusCode == 200;
+    } catch (e) {
+      print('Error updating product: $e');
+      return false;
+    }
+  }
+
   Future<bool> createProduct({
     required String name,
     required String price,
@@ -36,7 +88,7 @@ class WooCommerceService {
           'manage_stock': true,
           'stock_quantity': int.tryParse(stockQuantity) ?? 0,
           'sku': sku,
-          'status': 'publish', // or 'pending' if you want review
+          'status': 'publish', 
         }),
       );
 
