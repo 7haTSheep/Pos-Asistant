@@ -642,10 +642,8 @@ class _ProductEditDialogState extends State<ProductEditDialog> {
         ),
       ],
     );
-  },
-);
   }
-} // Wait, I put the Dialog into the state class? No, I defined a new class.
+}
 // But the closure of the file was inside the class?
 // Let me double check syntax. The class _ProductEditDialogState closes properly.
 // The class ProductEditDialog closes properly.

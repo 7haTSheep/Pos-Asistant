@@ -17,9 +17,23 @@ class LocalDatabaseService {
     return _instance!;
   }
 
+  /// Initialize database for a specific user
+  Future<void> init(int userId) async {
+    if (_database != null) {
+      await _database!.close();
+    }
+    _database = AppDatabase(dbName: 'pos_assistant_$userId');
+  }
+
   /// Get database instance
   AppDatabase get database {
-    _database ??= AppDatabase();
+    if (_database == null) {
+       // Fallback for when accessed before login (should be avoided or return empty/default)
+       // OR throw exception to ensure proper flow.
+       // For now, let's create a default one if not set, but ideally we force login.
+       // But to avoid crashing existing flow before we implement Auth UI fully:
+       _database = AppDatabase(dbName: 'pos_assistant_guest'); 
+    }
     return _database!;
   }
 

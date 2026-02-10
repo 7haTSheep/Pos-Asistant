@@ -19,13 +19,15 @@ class LocalProducts extends Table {
 
 @DriftDatabase(tables: [LocalProducts])
 class AppDatabase extends _$AppDatabase {
-  AppDatabase() : super(_openConnection());
+  final String dbName;
+
+  AppDatabase({required this.dbName}) : super(_openConnection(dbName));
 
   @override
   int get schemaVersion => 1;
 
-  static QueryExecutor _openConnection() {
-    return driftDatabase(name: 'pos_assistant.db');
+  static QueryExecutor _openConnection(String dbName) {
+    return driftDatabase(name: dbName);
   }
 
   // --- CRUD Operations ---

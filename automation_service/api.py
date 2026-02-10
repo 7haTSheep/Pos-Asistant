@@ -3,16 +3,104 @@ import os
 import time
 import pandas as pd
 import io
-from fastapi import FastAPI, HTTPException, UploadFile, File
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Depends
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
+from typing import Optional
+import hashlib
+import uuid
+import shutil
+from database import Database
 from main import get_wc_api # Reusing the helper from main.py
 
 app = FastAPI()
 
+# Mount uploads directory for serving images
+os.makedirs("uploads", exist_ok=True)
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+
 STATE_FILE = "state.json"
+db = Database()
 
 class SessionControl(BaseModel):
     duration_minutes: int = 40
+
+class UserRegister(BaseModel):
+    username: str
+    password: str
+
+class UserLogin(BaseModel):
+    username: str
+    password: str
+
+class ShareItem(BaseModel):
+    user_id: int
+    sku: Optional[str] = None
+    name: str
+
+def hash_password(password: str) -> str:
+    return hashlib.sha256(password.encode()).hexdigest()
+
+def get_db():
+    return Database()
+
+@app.post("/register")
+def register(user: UserRegister):
+    existing_user = db.get_user(user.username)
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Username already exists")
+    
+    hashed_pw = hash_password(user.password)
+    user_id = db.create_user(user.username, hashed_pw)
+    
+    if user_id:
+        return {"message": "User registered successfully", "user_id": user_id}
+    else:
+        raise HTTPException(status_code=500, detail="Failed to register user")
+
+@app.post("/login")
+def login(user: UserLogin):
+    db_user = db.get_user(user.username)
+    if not db_user:
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    
+    hashed_pw = hash_password(user.password)
+    if db_user['password_hash'] != hashed_pw:
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+        
+    return {"message": "Login successful", "user_id": db_user['id'], "username": db_user['username']}
+
+@app.post("/share-item")
+async def share_item(
+    user_id: int = Form(...),
+    sku: Optional[str] = Form(None),
+    name: str = Form(...),
+    image: UploadFile = File(...)
+):
+    try:
+        # Save image
+        file_ext = image.filename.split(".")[-1]
+        filename = f"{uuid.uuid4()}.{file_ext}"
+        file_path = os.path.join("uploads", filename)
+        
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(image.file, buffer)
+            
+        # Save to DB
+        # Store relative path or full URL depending on need. Storing relative for now.
+        # But for mobile to access, it needs full URL usually.
+        # We'll return full URL but store relative.
+        
+        item_id = db.add_shared_item(user_id, sku, name, file_path)
+        
+        if item_id:
+            return {"message": "Item shared successfully", "item_id": item_id, "image_url": f"/uploads/{filename}"}
+        else:
+            raise HTTPException(status_code=500, detail="Failed to save item to DB")
+            
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 def load_state():
     if not os.path.exists(STATE_FILE):
@@ -164,3 +252,4 @@ if __name__ == "__main__":
     import uvicorn
     # Listen on all interfaces so mobile app can connect
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
