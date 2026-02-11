@@ -21,9 +21,15 @@ export const Scene = () => {
     const [draggedId, setDraggedId] = React.useState(null);
     const dragOffset = React.useRef([0, 0, 0]);
 
-    // --- Drag handlers (only active in edit mode) ---
+    // --- Drag handlers (only selected item in edit mode) ---
     const handleDragStart = (id, point, currentPos) => {
-        if (!isEditMode || !currentPos) return;
+        if (!currentPos) return;
+        // Only allow dragging the selected item when in edit mode
+        if (!isEditMode || !(selection?.type === 'object' && selection.id === id)) {
+            // Still select the item on click
+            setSelection({ type: 'object', id });
+            return;
+        }
 
         dragOffset.current = [point.x - currentPos[0], 0, point.z - currentPos[2]];
         setDraggedId(id);
@@ -31,7 +37,7 @@ export const Scene = () => {
     };
 
     const handleDragMove = (point) => {
-        if (!draggedId || !isEditMode) return;
+        if (!draggedId) return;
 
         const offset = dragOffset.current;
         const newX = point.x - offset[0];
@@ -132,7 +138,7 @@ export const Scene = () => {
                         onDragEnd={handleDragEnd}
                         onClickEmpty={() => setSelection(null)}
                     />
-                    <CameraController enabled={!isEditMode} />
+                    <CameraController />
                     <Environment preset="city" />
 
                     {objects.map((obj) => (

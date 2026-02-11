@@ -18,9 +18,10 @@ const shortcuts = [
     },
     {
         category: 'Mouse', items: [
-            { keys: ['Click + Drag'], desc: 'Move object on floor (edit mode)' },
-            { keys: ['Click'], desc: 'Select object' },
-            { keys: ['Right Drag'], desc: 'Rotate camera' },
+            { keys: ['Left Drag'], desc: 'Move object on floor' },
+            { keys: ['Left Click'], desc: 'Select object' },
+            { keys: ['Right Drag'], desc: 'Pan camera' },
+            { keys: ['Ctrl', '+', 'Right Drag'], desc: 'Rotate camera' },
             { keys: ['Scroll'], desc: 'Zoom in/out' },
         ]
     },

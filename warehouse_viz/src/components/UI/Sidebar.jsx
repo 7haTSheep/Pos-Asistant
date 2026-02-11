@@ -27,21 +27,8 @@ export const Sidebar = () => {
         <div className="absolute top-0 left-0 h-full w-64 bg-gray-800 text-white p-4 overflow-y-auto z-10 shadow-lg">
             <h1 className="text-xl font-bold mb-4">Warehouse Viz</h1>
 
-            {/* Edit Mode Toggle */}
-            <button
-                onClick={toggleMode}
-                className={`w-full mb-6 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg font-semibold text-sm transition-all ${isEditMode
-                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 shadow-[0_0_12px_rgba(52,211,153,0.15)]'
-                    : 'bg-gray-700 text-gray-300 border border-gray-600 hover:bg-gray-600'
-                    }`}
-            >
-                {isEditMode ? <Pencil size={16} /> : <Eye size={16} />}
-                {isEditMode ? 'Edit Mode' : 'View Mode'}
-                <span className={`ml-auto w-2 h-2 rounded-full ${isEditMode ? 'bg-emerald-400 animate-pulse' : 'bg-gray-500'}`} />
-            </button>
-
-            {/* Add Object */}
-            <div className={`mb-8 transition-opacity ${isEditMode ? 'opacity-100' : 'opacity-40 pointer-events-none'}`}>
+            {/* Add Object - always visible */}
+            <div className="mb-8">
                 <h2 className="text-sm uppercase text-gray-400 mb-3 font-semibold">Add Object</h2>
                 <div className="grid grid-cols-2 gap-2">
                     <button
@@ -70,7 +57,7 @@ export const Sidebar = () => {
                 </div>
             </div>
 
-            {/* Selected Object Properties */}
+            {/* Selected Object Properties - only when item selected */}
             {selectedObject && (
                 <div className="border-t border-gray-700 pt-4">
                     <h2 className="text-sm uppercase text-gray-400 mb-3 font-semibold">Properties</h2>
@@ -103,7 +90,20 @@ export const Sidebar = () => {
                             </div>
                         </div>
 
-                        {/* Size controls */}
+                        {/* Edit toggle - only appears when item is selected */}
+                        <button
+                            onClick={toggleMode}
+                            className={`w-full flex items-center justify-center gap-2 py-2 px-4 rounded-lg font-semibold text-sm transition-all ${isEditMode
+                                ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 shadow-[0_0_12px_rgba(52,211,153,0.15)]'
+                                : 'bg-gray-700 text-gray-300 border border-gray-600 hover:bg-gray-600'
+                                }`}
+                        >
+                            {isEditMode ? <Pencil size={16} /> : <Eye size={16} />}
+                            {isEditMode ? 'Editing' : 'Edit Item'}
+                            <span className={`ml-auto w-2 h-2 rounded-full ${isEditMode ? 'bg-emerald-400 animate-pulse' : 'bg-gray-500'}`} />
+                        </button>
+
+                        {/* Size controls - only in edit mode */}
                         {isEditMode && (
                             <div>
                                 <span className="text-gray-400 text-xs block mb-1">Size</span>
@@ -136,7 +136,7 @@ export const Sidebar = () => {
 
                         <button
                             onClick={() => removeObject(selectedObject.id)}
-                            className="w-full mt-4 bg-red-500/80 hover:bg-red-500 text-white py-2 rounded transition"
+                            className="w-full mt-2 bg-red-500/80 hover:bg-red-500 text-white py-2 rounded transition"
                         >
                             Delete Object
                         </button>

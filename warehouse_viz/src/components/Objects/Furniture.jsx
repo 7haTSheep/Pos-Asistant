@@ -5,27 +5,17 @@ import { Html } from '@react-three/drei';
 export const Furniture = ({ id, position, rotation, size, type, isSelected, isDragged, onDragStart }) => {
     const setSelection = useStore((state) => state.setSelection);
     const mesh = useRef();
-    const didDrag = useRef(false);
 
     const handlePointerDown = (e) => {
         e.stopPropagation();
-        didDrag.current = false;
         if (onDragStart) {
             onDragStart(id, e.point, position);
         }
     };
 
-    const handlePointerMove = (e) => {
-        didDrag.current = true;
-    };
-
     const handleClick = (e) => {
         e.stopPropagation();
-        // Only select on click, not after a drag
-        if (!didDrag.current) {
-            setSelection({ type: 'object', id });
-        }
-        didDrag.current = false;
+        setSelection({ type: 'object', id });
     };
 
     const color = isSelected ? '#3b82f6' : (type === 'fridge' ? '#e5e7eb' : '#d97706');
@@ -36,7 +26,6 @@ export const Furniture = ({ id, position, rotation, size, type, isSelected, isDr
                 ref={mesh}
                 onClick={handleClick}
                 onPointerDown={handlePointerDown}
-                onPointerMove={handlePointerMove}
                 raycast={isDragged ? () => null : undefined}
                 castShadow
                 receiveShadow
