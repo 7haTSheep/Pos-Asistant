@@ -3,6 +3,7 @@ import { Canvas } from '@react-three/fiber';
 import { CameraController } from './CameraController';
 import { WarehouseFloor } from './WarehouseFloor';
 import { Environment } from '@react-three/drei';
+import { DropZone } from './DropZone';
 
 import { useStore } from '../../store/store';
 import { Furniture } from '../Objects/Furniture';
@@ -27,6 +28,7 @@ export const Scene = () => {
                     <WarehouseFloor />
                     <CameraController />
                     <Environment preset="city" />
+                    <DropZone />
 
                     {objects.map((obj) => (
                         <Furniture

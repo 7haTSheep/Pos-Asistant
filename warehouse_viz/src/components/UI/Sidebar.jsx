@@ -20,24 +20,30 @@ export const Sidebar = () => {
                 <h2 className="text-sm uppercase text-gray-400 mb-3 font-semibold">Add Object</h2>
                 <div className="grid grid-cols-2 gap-2">
                     <button
+                        draggable
+                        onDragStart={(e) => e.dataTransfer.setData('type', 'shelf')}
                         onClick={() => addObject('shelf', [0, 1.5, 0])}
-                        className="flex flex-col items-center justify-center p-3 bg-gray-700 hover:bg-gray-600 rounded transition"
+                        className="flex flex-col items-center justify-center p-3 bg-gray-700 hover:bg-gray-600 rounded transition cursor-grab active:cursor-grabbing"
                     >
                         <Archive size={24} className="mb-2 text-orange-400" />
                         <span className="text-xs">Shelf</span>
                     </button>
 
                     <button
+                        draggable
+                        onDragStart={(e) => e.dataTransfer.setData('type', 'fridge')}
                         onClick={() => addObject('fridge', [0, 1, 0])}
-                        className="flex flex-col items-center justify-center p-3 bg-gray-700 hover:bg-gray-600 rounded transition"
+                        className="flex flex-col items-center justify-center p-3 bg-gray-700 hover:bg-gray-600 rounded transition cursor-grab active:cursor-grabbing"
                     >
                         <Snowflake size={24} className="mb-2 text-blue-300" />
                         <span className="text-xs">Fridge</span>
                     </button>
 
                     <button
+                        draggable
+                        onDragStart={(e) => e.dataTransfer.setData('type', 'freezer')}
                         onClick={() => addObject('freezer', [0, 0.5, 0])}
-                        className="flex flex-col items-center justify-center p-3 bg-gray-700 hover:bg-gray-600 rounded transition"
+                        className="flex flex-col items-center justify-center p-3 bg-gray-700 hover:bg-gray-600 rounded transition cursor-grab active:cursor-grabbing"
                     >
                         <Box size={24} className="mb-2 text-cyan-200" />
                         <span className="text-xs">Freezer</span>
