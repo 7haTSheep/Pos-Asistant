@@ -2,9 +2,16 @@ import React, { useRef } from 'react';
 import { useStore } from '../../store/store';
 import { Html } from '@react-three/drei';
 
-export const Furniture = ({ id, position, rotation, size, type, isSelected }) => {
+export const Furniture = ({ id, position, rotation, size, type, isSelected, isDragged, onDragStart }) => {
     const setSelection = useStore((state) => state.setSelection);
     const mesh = useRef();
+
+    const handlePointerDown = (e) => {
+        e.stopPropagation();
+        if (onDragStart) {
+            onDragStart(id, e.point, position);
+        }
+    };
 
     const handleClick = (e) => {
         e.stopPropagation();
@@ -15,7 +22,14 @@ export const Furniture = ({ id, position, rotation, size, type, isSelected }) =>
 
     return (
         <group position={position} rotation={rotation}>
-            <mesh ref={mesh} onClick={handleClick} castShadow receiveShadow>
+            <mesh
+                ref={mesh}
+                onClick={handleClick}
+                onPointerDown={handlePointerDown}
+                raycast={isDragged ? () => null : undefined}
+                castShadow
+                receiveShadow
+            >
                 <boxGeometry args={size} />
                 <meshStandardMaterial color={color} />
             </mesh>
