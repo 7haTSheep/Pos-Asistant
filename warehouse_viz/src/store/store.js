@@ -15,7 +15,7 @@ export const useStore = create((set) => ({
             type,
             position, // [x, y, z]
             rotation: [0, 0, 0],
-            size: type === 'shelf' ? [2, 3, 1] : [1, 2, 1], // Default sizes
+            size: type === 'shelf' ? [3, 4, 1.5] : type === 'fridge' ? [2, 3, 1.5] : [2, 2, 1.5], // Default sizes
             zoneId: null,
             grid: { rows: 4, cols: 3, depth: 2 } // Default grid
         }]

@@ -1,5 +1,6 @@
 import { Scene } from './components/Review/Scene';
 import { Sidebar } from './components/UI/Sidebar';
+import { ControlsHelp } from './components/UI/ControlsHelp';
 
 function App() {
   return (
@@ -8,6 +9,7 @@ function App() {
       <div className="flex-1 h-screen relative">
         <Scene />
       </div>
+      <ControlsHelp />
     </div>
   );
 }
