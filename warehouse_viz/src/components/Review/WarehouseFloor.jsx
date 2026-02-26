@@ -1,34 +1,45 @@
 import React from 'react';
 
 
-export const WarehouseFloor = ({ onDragMove, onDragEnd, onClickEmpty }) => {
-    // We can add grid lines here later
+export const WarehouseFloor = ({ floor, onDragMove, onDragEnd, onClickEmpty }) => {
+    const width = floor?.dimensions?.width || 50;
+    const depth = floor?.dimensions?.depth || 50;
+    const gridVisible = floor?.floorGrid?.visible ?? true;
+    const cellSize = Math.max(0.5, floor?.floorGrid?.cellSize || 1);
+    const gridSize = Math.max(width, depth);
+    const divisions = Math.max(1, Math.round(gridSize / cellSize));
+
     const handlePointerMove = (e) => {
-        // e.point is the intersection point in world coordinates
         if (onDragMove) onDragMove(e.point);
     };
 
-    const handlePointerUp = (e) => {
+    const handlePointerUp = () => {
         if (onDragEnd) onDragEnd();
     };
 
     const handleClick = (e) => {
-        // Deselect when clicking empty floor space
-        if (onClickEmpty) onClickEmpty();
+        if (onClickEmpty) onClickEmpty(e.point);
     };
 
     return (
-        <mesh
-            rotation={[-Math.PI / 2, 0, 0]}
-            position={[0, -0.01, 0]}
-            receiveShadow
-            onPointerMove={handlePointerMove}
-            onPointerUp={handlePointerUp}
-            onClick={handleClick}
-        >
-            <planeGeometry args={[50, 50]} />
-            <meshStandardMaterial color="#333" roughness={0.8} metalness={0.2} />
-            <gridHelper args={[50, 50, '#555', '#222']} rotation={[-Math.PI / 2, 0, 0]} />
-        </mesh>
+        <group>
+            <mesh
+                rotation={[-Math.PI / 2, 0, 0]}
+                position={[0, -0.01, 0]}
+                onPointerMove={handlePointerMove}
+                onPointerUp={handlePointerUp}
+                onClick={handleClick}
+            >
+                <planeGeometry args={[width, depth]} />
+                <meshBasicMaterial color="#e7e2cc" />
+            </mesh>
+
+            {gridVisible && (
+                <gridHelper
+                    args={[gridSize, divisions, '#9ca3af', '#d1d5db']}
+                    position={[0, 0.01, 0]}
+                />
+            )}
+        </group>
     );
 };

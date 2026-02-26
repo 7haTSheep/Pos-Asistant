@@ -1,0 +1,18 @@
+{
+  "wall_drawn": true,
+  "door_mode_entered": true,
+  "door_mode_exited_after_click": true,
+  "desk_dropped": true,
+  "monitor_dropped": true,
+  "rotate_drag_attempted": true,
+  "files": {
+    "door": "C:\\Users\\ddaej\\OneDrive\\Documents\\GitHub\\Pos\\warehouse_viz\\output\\playwright\\qa-door-on-wall.png",
+    "before_rotate": "C:\\Users\\ddaej\\OneDrive\\Documents\\GitHub\\Pos\\warehouse_viz\\output\\playwright\\qa-desk-monitor-before-rotate.png",
+    "after_rotate": "C:\\Users\\ddaej\\OneDrive\\Documents\\GitHub\\Pos\\warehouse_viz\\output\\playwright\\qa-desk-monitor-after-rotate.png"
+  },
+  "console_errors": [
+    "Failed to load resource: net::ERR_CONNECTION_REFUSED",
+    "Failed to load resource: net::ERR_CONNECTION_REFUSED"
+  ],
+  "page_errors": []
+}

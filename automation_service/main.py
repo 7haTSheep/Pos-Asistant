@@ -1,21 +1,30 @@
 import os
 import time
 import json
+import datetime
 from dotenv import load_dotenv
 from woocommerce import API
 from image_finder import ImageFinder
 from categorizer import Categorizer
+from database import Database
+from expiry_logic import determine_expiry_severity, build_alert_payload, ALERT_LIMIT
 
 STATE_FILE = "state.json"
+db = Database()
+db.create_tables_if_not_exist()
 
 def load_state():
     if not os.path.exists(STATE_FILE):
-        return {"session_active": False, "session_end_time": 0, "last_run": 0}
+        return {"session_active": False, "session_end_time": 0, "last_run": 0, "alerts": []}
     try:
         with open(STATE_FILE, "r") as f:
-            return json.load(f)
+            state = json.load(f)
+            if not isinstance(state, dict):
+                state = {"session_active": False, "session_end_time": 0, "last_run": 0}
+            state.setdefault("alerts", [])
+            return state
     except:
-         return {"session_active": False, "session_end_time": 0, "last_run": 0}
+         return {"session_active": False, "session_end_time": 0, "last_run": 0, "alerts": []}
 
 def save_state(state):
     with open(STATE_FILE, "w") as f:
@@ -96,6 +105,31 @@ def check_products(wcapi, finder, categorizer):
     
     print("[Job] Check complete.")
 
+
+def register_alerts_in_state(new_alerts):
+    if not new_alerts:
+        return
+    state = load_state()
+    alerts = state.get("alerts", [])
+    state["alerts"] = (new_alerts + alerts)[:ALERT_LIMIT]
+    save_state(state)
+
+
+def process_expiry_alerts():
+    today = datetime.utcnow().date()
+    entries = db.get_pending_expiries()
+    alerts = []
+    for entry in entries:
+        severity = determine_expiry_severity(entry, today)
+        if not severity:
+            continue
+        alert = build_alert_payload(entry, severity, today)
+        alerts.append(alert)
+        db.mark_expiry_alerted(entry.get("id"))
+    if alerts:
+        register_alerts_in_state(alerts)
+    return alerts
+
 def main():
     print("Inventory Automation Service (Scheduler Mode) Started...")
     load_dotenv()
@@ -123,6 +157,9 @@ def main():
             last_run = state.get("last_run", 0)
             if (now - last_run) > 600:
                 check_products(wcapi, finder, categorizer)
+                expiry_alerts = process_expiry_alerts()
+                for alert in expiry_alerts:
+                    print(f"[Expiry Alert] {alert['sku']} ({alert['name']}) due in {alert['due_in_days']} days [{alert['severity']}]")
                 state["last_run"] = now
                 save_state(state)
             

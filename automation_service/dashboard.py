@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 from woocommerce import API
 from dotenv import load_dotenv
 from database import Database
+from expiry_logic import determine_expiry_severity
 
 # Load environment variables
 load_dotenv()
@@ -34,12 +35,16 @@ STATE_FILE = "state.json"
 
 def load_state():
     if not os.path.exists(STATE_FILE):
-        return {"session_active": False, "session_end_time": 0, "last_run": 0}
+        return {"session_active": False, "session_end_time": 0, "last_run": 0, "alerts": []}
     try:
         with open(STATE_FILE, "r") as f:
-            return json.load(f)
+            state = json.load(f)
+            if not isinstance(state, dict):
+                return {"session_active": False, "session_end_time": 0, "last_run": 0, "alerts": []}
+            state.setdefault("alerts", [])
+            return state
     except:
-         return {"session_active": False, "session_end_time": 0, "last_run": 0}
+         return {"session_active": False, "session_end_time": 0, "last_run": 0, "alerts": []}
 
 def save_state(state):
     with open(STATE_FILE, "w") as f:
@@ -49,7 +54,7 @@ def save_state(state):
 st.set_page_config(page_title="Inventory Automator", layout="wide")
 st.title("Inventory Automation Dashboard")
 
-tab1, tab2, tab3 = st.tabs(["Inventory Manager", "Automation Control", "Price Inventory"])
+tab1, tab2, tab3, tab4 = st.tabs(["Inventory Manager", "Automation Control", "Price Inventory", "Expiry Alerts"])
 
 with tab1:
     st.header("Inventory Management")
@@ -184,3 +189,43 @@ with tab3:
     else:
         st.warning("No inventory data found or database connection failed.")
         st.info("Ensure the 'dummydatabase3' is accessible on localhost (root/no-password).")
+
+with tab4:
+    st.header("Expiry Alerts")
+    db = Database()
+    today = datetime.utcnow().date()
+    entries = db.get_pending_expiries()
+
+    if not entries:
+        st.success("No expiry alerts in the system.")
+    else:
+        for entry in entries:
+            severity = determine_expiry_severity(entry, today)
+            if not severity:
+                continue
+            expiry_date = entry.get("expiry_date")
+            due_days = (expiry_date - today).days if expiry_date else None
+            color = "#fee2e2" if severity in ("meat-urgent", "standard-week") else "#fef3c7"
+            severity_label = severity.replace("-", " ").title()
+            st.markdown(
+                f"<div style='padding:12px; border-radius:12px; background:{color}; border:1px solid #e5e7eb; margin-bottom:8px;'>"
+                f"<strong>{entry.get('name')} ({entry.get('sku')})</strong><br/>"
+                f"Expiry: {expiry_date} {'(' + str(due_days) + ' days)' if due_days is not None else ''}<br/>"
+                f"<span style='font-size:12px; color:#475569;'>Severity: {severity_label}</span>"
+                f"</div>",
+                unsafe_allow_html=True,
+            )
+
+    state = load_state()
+    recent_alerts = state.get("alerts", [])
+    if recent_alerts:
+        st.subheader("Recent Alert Log")
+        for alert in recent_alerts[:5]:
+            st.markdown(
+                f"<div style='padding:10px; border-radius:10px; border:1px solid #cbd5e1; margin-bottom:6px;'>"
+                f"<strong>{alert.get('name')} ({alert.get('sku')})</strong><br/>"
+                f"Triggered at {alert.get('timestamp')} - Severity: {alert.get('severity').replace('-', ' ').title()}<br/>"
+                f"Due in {alert.get('due_in_days')} days"
+                f"</div>",
+                unsafe_allow_html=True,
+            )

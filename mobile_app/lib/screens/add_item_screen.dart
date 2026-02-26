@@ -4,17 +4,23 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:barcode_widget/barcode_widget.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:math';
+import 'package:intl/intl.dart';
 
 import '../services/woocommerce_service.dart';
 import '../services/open_food_facts_service.dart';
 import '../services/local_database_service.dart';
 import '../services/user_session.dart';
+import '../services/expiry_service.dart';
+import '../services/notification_service.dart';
 import 'barcode_scanner.dart';
 import 'text_recognizer_screen.dart';
 
 import 'smart_scanner_screen.dart';
 import 'inventory_import_screen.dart';
 import 'local_products_screen.dart';
+import 'warehouse_scan_screen.dart';
+import 'manifest_dispatch_screen.dart';
+import 'manifest_verification_screen.dart';
 import 'auth_screen.dart';
 import '../services/auth_service.dart'; // For logout
 
@@ -34,6 +40,10 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
   bool _isLoading = false;
   XFile? _imageFile;
   bool _shareToGlobal = false;
+  DateTime? _expiryDate;
+  bool _isMeat = false;
+  final _expiryService = ExpiryService();
+  final _notificationService = NotificationService();
 
   void _generateSku() {
     // Determine prefix based on name if possible
@@ -127,8 +137,8 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
         sku: sku,
       );
       
-      if (mounted) {
-        if (success) {
+        if (mounted) {
+            if (success) {
            // 2. Save to Local DB (Per Profile)
            final localId = await LocalDatabaseService.instance.addProduct(
              name: name,
@@ -153,6 +163,7 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
 
           _showBarcodeDialog(sku, name);
 
+          await _handleExpiryMetadata(sku, name);
           _nameController.clear();
           _priceController.clear();
           _stockController.clear();
@@ -160,6 +171,8 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
           setState(() {
             _imageFile = null;
             _shareToGlobal = false;
+            _expiryDate = null;
+            _isMeat = false;
           });
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -226,6 +239,43 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => const SmartScannerScreen()),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.grid_view),
+              title: const Text('Warehouse Scan'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const WarehouseScanScreen()),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.local_shipping),
+              title: const Text('Dispatch to Storefront'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const ManifestDispatchScreen(),
+                  ),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.check_circle_outline),
+              title: const Text('Storefront Check-off'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const ManifestVerificationScreen(),
+                  ),
                 );
               },
             ),
@@ -335,6 +385,27 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
                 ),
               ),
               const SizedBox(height: 16),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Expiry Date'),
+                subtitle: Text(
+                  _expiryDate != null
+                      ? DateFormat.yMMMMd().format(_expiryDate!)
+                      : 'Tap the calendar to pick a date',
+                ),
+                trailing: IconButton(
+                  icon: const Icon(Icons.calendar_today),
+                  onPressed: _pickExpiryDate,
+                ),
+              ),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                value: _isMeat,
+                onChanged: (value) => setState(() => _isMeat = value),
+                title: const Text('Meat / Perishable'),
+                subtitle: const Text('High priority notifications'),
+              ),
+              const SizedBox(height: 16),
                 // SKU Field with Scan Button
                 TextFormField(
                   controller: _skuController,
@@ -437,3 +508,35 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
     );
   }
 }
+  Future<void> _pickExpiryDate() async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _expiryDate ?? now,
+      firstDate: now,
+      lastDate: now.add(const Duration(days: 365)),
+    );
+    if (picked != null) {
+      setState(() {
+        _expiryDate = picked;
+      });
+    }
+  }
+
+  Future<void> _handleExpiryMetadata(String sku, String name) async {
+    if (_expiryDate == null || sku.isEmpty) {
+      return;
+    }
+    await _expiryService.reportExpiry(
+      sku: sku,
+      name: name,
+      expiryDate: _expiryDate!,
+      isMeat: _isMeat,
+    );
+    await _notificationService.scheduleExpiryReminders(
+      sku: sku,
+      name: name,
+      expiryDate: _expiryDate!,
+      isMeat: _isMeat,
+    );
+  }

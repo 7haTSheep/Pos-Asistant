@@ -1,0 +1,8 @@
+﻿### Page
+- Page URL: http://127.0.0.1:4173/
+- Page Title: warehouse_viz
+- Console: 2 errors, 0 warnings
+### Snapshot
+- [Snapshot](.playwright-cli\page-2026-02-22T14-23-12-278Z.yml)
+### Events
+- New console entries: .playwright-cli\console-2026-02-22T14-22-58-784Z.log#L1-L2

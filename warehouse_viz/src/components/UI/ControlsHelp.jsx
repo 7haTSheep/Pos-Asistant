@@ -5,13 +5,13 @@ import { useStore } from '../../store/store';
 const shortcuts = [
     {
         category: 'Movement', items: [
-            { keys: ['↑', '↓', '←', '→'], desc: 'Move selected object (0.5 units)' },
-            { keys: ['Shift', '+', '↑↓←→'], desc: 'Fine move (0.1 units)' },
+            { keys: ['Up', 'Down', 'Left', 'Right'], desc: 'Move selected object (0.5 units)' },
+            { keys: ['Shift', '+', 'Arrows'], desc: 'Fine move (0.1 units)' },
         ]
     },
     {
         category: 'Actions', items: [
-            { keys: ['R'], desc: 'Rotate 90°' },
+            { keys: ['R'], desc: 'Rotate 90 degrees' },
             { keys: ['Del'], desc: 'Delete selected object' },
             { keys: ['Esc'], desc: 'Deselect' },
         ]
@@ -20,9 +20,7 @@ const shortcuts = [
         category: 'Mouse', items: [
             { keys: ['Left Drag'], desc: 'Move object on floor' },
             { keys: ['Left Click'], desc: 'Select object' },
-            { keys: ['Right Drag'], desc: 'Pan camera' },
-            { keys: ['Ctrl', '+', 'Right Drag'], desc: 'Rotate camera' },
-            { keys: ['Scroll'], desc: 'Zoom in/out' },
+            { keys: ['View'], desc: 'Camera is locked to top-down' },
         ]
     },
     {
@@ -40,7 +38,7 @@ export const ControlsHelp = () => {
         const handleKey = (e) => {
             if (e.key === '?' || (e.key === '/' && e.shiftKey)) {
                 e.preventDefault();
-                setIsOpen(prev => !prev);
+                setIsOpen((prev) => !prev);
             }
         };
         window.addEventListener('keydown', handleKey);
@@ -49,63 +47,54 @@ export const ControlsHelp = () => {
 
     return (
         <>
-            {/* Toggle Button */}
             <button
-                onClick={() => setIsOpen(prev => !prev)}
-                className="fixed bottom-4 right-4 z-50 w-10 h-10 rounded-full bg-gray-700/80 hover:bg-gray-600 text-white flex items-center justify-center transition-all hover:scale-110 backdrop-blur-sm border border-gray-600/50"
+                onClick={() => setIsOpen((prev) => !prev)}
+                className="help-toggle"
                 title="Show controls (?)"
             >
                 <HelpCircle size={20} />
             </button>
 
-            {/* Help Panel */}
             {isOpen && (
-                <div className="fixed bottom-16 right-4 z-50 w-80 max-h-[70vh] overflow-y-auto bg-gray-900/95 backdrop-blur-md text-white rounded-xl border border-gray-700/50 shadow-2xl">
-                    {/* Header */}
-                    <div className="flex items-center justify-between p-4 border-b border-gray-700/50">
-                        <h3 className="text-sm font-bold uppercase tracking-wider text-gray-300">
-                            Controls & Shortcuts
-                        </h3>
+                <div className="help-panel">
+                    <div className="help-header">
+                        <h3>Controls & Shortcuts</h3>
                         <button
                             onClick={() => setIsOpen(false)}
-                            className="text-gray-400 hover:text-white transition"
+                            className="help-close"
                         >
                             <X size={16} />
                         </button>
                     </div>
 
-                    {/* Mode indicator */}
-                    <div className="px-4 py-2 border-b border-gray-700/50">
-                        <div className="flex items-center gap-2 text-xs">
-                            <span className={`w-2 h-2 rounded-full ${mode === 'edit' ? 'bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.5)]' : 'bg-gray-500'}`} />
-                            <span className="text-gray-400">
-                                Current mode: <span className={`font-semibold ${mode === 'edit' ? 'text-emerald-400' : 'text-gray-300'}`}>{mode === 'edit' ? 'Edit' : 'View'}</span>
+                    <div className="help-mode">
+                        <div className="help-mode-row">
+                            <span className={`mode-dot ${mode === 'edit' ? 'is-edit' : ''}`} />
+                            <span className="help-mode-text">
+                                Current mode: <span className={`mode-label ${mode === 'edit' ? 'is-edit' : ''}`}>{mode === 'edit' ? 'Edit' : 'View'}</span>
                             </span>
                         </div>
                         {mode !== 'edit' && (
-                            <p className="text-xs text-amber-400/80 mt-1">
-                                ⚠ Enable Edit mode to use movement shortcuts
+                            <p className="help-mode-warning">
+                                Enable Edit mode to use movement shortcuts
                             </p>
                         )}
                     </div>
 
-                    {/* Shortcuts */}
-                    <div className="p-4 space-y-4">
-                        {shortcuts.map(group => (
-                            <div key={group.category}>
-                                <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-2">
-                                    {group.category}
-                                </h4>
-                                <div className="space-y-1.5">
+                    <div className="help-body">
+                        {shortcuts.map((group) => (
+                            <div key={group.category} className="help-group">
+                                <h4>{group.category}</h4>
+                                <div>
                                     {group.items.map((item, i) => (
-                                        <div key={i} className="flex items-center justify-between gap-2">
-                                            <span className="text-xs text-gray-400">{item.desc}</span>
-                                            <div className="flex items-center gap-1 shrink-0">
+                                        <div key={i} className="help-row">
+                                            <span className="help-desc">{item.desc}</span>
+                                            <div className="help-keys">
                                                 {item.keys.map((key, j) => (
                                                     key === '+' ? (
-                                                        <span key={j} className="text-gray-500 text-xs">+</span>
+                                                        <span key={j} className="help-plus">+</span>
                                                     ) : (
-                                                        <kbd key={j} className="px-1.5 py-0.5 text-xs bg-gray-700/80 border border-gray-600/50 rounded text-gray-300 font-mono min-w-[24px] text-center">
+                                                        <kbd key={j} className="help-key">
                                                             {key}
                                                         </kbd>
                                                     )
