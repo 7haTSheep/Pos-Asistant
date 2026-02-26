@@ -298,9 +298,8 @@ export const Sidebar = () => {
                         <button
                             key={floor.id}
                             onClick={() => setActiveFloor(floor.id)}
-                            className={`w-full text-left px-2 py-2 rounded text-sm transition ${
-                                activeFloorId === floor.id ? 'bg-blue-500/20 border border-blue-400/40' : 'bg-gray-700 hover:bg-gray-600'
-                            }`}
+                            className={`w-full text-left px-2 py-2 rounded text-sm transition ${activeFloorId === floor.id ? 'bg-blue-500/20 border border-blue-400/40' : 'bg-gray-700 hover:bg-gray-600'
+                                }`}
                         >
                             {floor.name}
                         </button>
@@ -519,13 +518,12 @@ export const Sidebar = () => {
                     />
                     Listen for mobile scans
                 </label>
-                <p className={`text-xs ${
-                    syncStatus === 'error'
+                <p className={`text-xs ${syncStatus === 'error'
                         ? 'text-red-300'
                         : syncStatus === 'listening'
                             ? 'text-emerald-300'
                             : 'text-gray-400'
-                }`}
+                    }`}
                 >
                     Status: {syncStatus}
                 </p>
@@ -602,11 +600,10 @@ export const Sidebar = () => {
 
                         <button
                             onClick={toggleMode}
-                            className={`w-full flex items-center justify-center gap-2 py-2 px-4 rounded-lg font-semibold text-sm transition-all ${
-                                isEditMode
+                            className={`w-full flex items-center justify-center gap-2 py-2 px-4 rounded-lg font-semibold text-sm transition-all ${isEditMode
                                     ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
                                     : 'bg-gray-700 text-gray-300 border border-gray-600 hover:bg-gray-600'
-                            }`}
+                                }`}
                         >
                             {isEditMode ? <Pencil size={16} /> : <Eye size={16} />}
                             {isEditMode ? 'Editing' : 'Edit Item'}
