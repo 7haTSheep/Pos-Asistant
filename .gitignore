@@ -2,7 +2,14 @@
 .venv/
 __pycache__/
 *.pyc
-.env
+server/.env
+server/state.json
+server/warehouse_scan_events.json
+server/uploads/
+
+# Node
+node_modules/
+client/node_modules/
 
 # Flutter/Dart
 .dart_tool/
@@ -26,7 +33,8 @@ android/key.properties
 # OS
 .DS_Store
 Thumbs.db
+
+# Build artifacts
 **/dist/
 **/build/
 *.spec
-1

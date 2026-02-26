@@ -10,7 +10,7 @@ import { Furniture } from '../Objects/Furniture';
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 const ITEM_FOOTPRINT_SCALE = 0.32;
-const warehouseApiUrl = import.meta.env.VITE_WAREHOUSE_API_URL || 'http://localhost:8000';
+const warehouseApiUrl = import.meta.env.VITE_WAREHOUSE_API_URL || '';
 
 const computeZoneMesh = (zone, floor) => {
     if (!zone || !floor) return null;

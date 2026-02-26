@@ -6,6 +6,7 @@ python-dotenv
 openai
 fastapi
 uvicorn
+mysql-connector-python
 
 pandas
 openpyxl

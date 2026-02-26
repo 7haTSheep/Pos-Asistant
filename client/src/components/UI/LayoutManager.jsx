@@ -95,7 +95,7 @@ export const LayoutManager = ({ apiUrl }) => {
             <div className="layout-manager-header">
                 <h2>Layout Library</h2>
             </div>
-            {!apiUrl && <p className="text-xs text-gray-500">Set `VITE_WAREHOUSE_API_URL` to enable saves.</p>}
+            {!apiUrl && <p className="text-xs text-gray-500">Backend not connected — start the server to enable saves.</p>}
             <div className="space-y-2">
                 <input
                     value={planName}
