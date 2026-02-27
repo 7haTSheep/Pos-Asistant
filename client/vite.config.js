@@ -21,7 +21,7 @@ export default defineConfig({
         '/share-item',
         '/import-inventory',
         '/uploads',
-      ].map((route) => [route, { target: 'http://localhost:8000', changeOrigin: true }])
+      ].map((route) => [route, { target: 'http://localhost:8002', changeOrigin: true }])
     ),
   },
   test: {

@@ -61,7 +61,7 @@ const getTexture = (src) => {
     return texture;
 };
 
-export const Furniture = ({ id, position, rotation, size, type, isSelected, isDragged, onDragStart }) => {
+export const Furniture = ({ id, position, rotation, size, dimensions, type, isSelected, isDragged, onDragStart }) => {
     const setSelection = useStore((state) => state.setSelection);
     const mesh = useRef();
 
@@ -77,11 +77,13 @@ export const Furniture = ({ id, position, rotation, size, type, isSelected, isDr
         setSelection({ type: 'object', id });
     };
 
-    const rawHeight = size?.[1] || 1;
+    // Support both 'size' and 'dimensions' for backwards compatibility
+    const objectSize = size || dimensions || [1, 1, 1];
+    const rawHeight = objectSize[1] || 1;
     const flatHeight = clamp(rawHeight * 0.22, 0.12, 1.35);
     const yLift = ((position?.[1] || 1) - 1) * 0.14;
-    const rawWidth = (size?.[0] || 1) * ITEM_FOOTPRINT_SCALE;
-    const rawDepth = (size?.[2] || 1) * ITEM_FOOTPRINT_SCALE;
+    const rawWidth = (objectSize[0] || 1) * ITEM_FOOTPRINT_SCALE;
+    const rawDepth = (objectSize[2] || 1) * ITEM_FOOTPRINT_SCALE;
     const renderWidth = clamp(rawWidth, 0.2, 3.2);
     const renderDepth = clamp(rawDepth, 0.2, 3.2);
 

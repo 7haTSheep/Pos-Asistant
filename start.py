@@ -22,9 +22,9 @@ def main():
     print("=" * 50)
 
     # ── Backend (FastAPI via uvicorn) ──────────────────
-    print("\n[launcher] Starting backend  (server/api.py) ...")
+    print("\n[launcher] Starting backend  (server/api.py) on port 8002...")
     backend = subprocess.Popen(
-        [sys.executable, "api.py"],
+        [sys.executable, "-c", "import uvicorn; from api import app; uvicorn.run(app, host='0.0.0.0', port=8002)"],
         cwd=SERVER_DIR,
     )
 

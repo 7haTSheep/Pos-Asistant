@@ -1,0 +1,13 @@
+# Warehouse Local Agent Requirements
+
+# GUI
+tkinter
+
+# HTTP Client
+requests
+
+# WebSocket Client
+websockets
+
+# PyInstaller for EXE creation
+pyinstaller

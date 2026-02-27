@@ -33,6 +33,7 @@ const ICON_MAP = {
 
 export const LibraryPanel = () => {
     const addObject = useStore((state) => state.addObject);
+    const setPlacementItem = useStore((state) => state.setPlacementItem);
     const [activeCategory, setActiveCategory] = useState('All');
     const [searchQuery, setSearchQuery] = useState('');
 
@@ -47,7 +48,14 @@ export const LibraryPanel = () => {
 
     // Handle drag start for drag-and-drop
     const handleDragStart = (e, objectType) => {
-        e.dataTransfer.setData('objectType', objectType.id);
+        const item = {
+            kind: 'object',
+            type: objectType.id,
+            name: objectType.name,
+            defaultDimensions: objectType.defaultDimensions,
+        };
+        e.dataTransfer.setData('application/x-warehouse-catalog-item', JSON.stringify(item));
+        e.dataTransfer.effectAllowed = 'copy';
     };
 
     // Handle click to add object at default position

@@ -1,7 +1,8 @@
 import React from 'react';
 
 
-export const WarehouseFloor = ({ floor, onDragMove, onDragEnd, onClickEmpty }) => {
+export const WarehouseFloor = ({ floor, onDragMove, onDragEnd, onClickEmpty, onPointerDown }) => {
+    // Provide default floor if none is passed
     const width = floor?.dimensions?.width || 50;
     const depth = floor?.dimensions?.depth || 50;
     const gridVisible = floor?.floorGrid?.visible ?? true;
@@ -17,6 +18,10 @@ export const WarehouseFloor = ({ floor, onDragMove, onDragEnd, onClickEmpty }) =
         if (onDragEnd) onDragEnd();
     };
 
+    const handlePointerDown = (e) => {
+        if (onPointerDown) onPointerDown(e.point);
+    };
+
     const handleClick = (e) => {
         if (onClickEmpty) onClickEmpty(e.point);
     };
@@ -28,6 +33,7 @@ export const WarehouseFloor = ({ floor, onDragMove, onDragEnd, onClickEmpty }) =
                 position={[0, -0.01, 0]}
                 onPointerMove={handlePointerMove}
                 onPointerUp={handlePointerUp}
+                onPointerDown={handlePointerDown}
                 onClick={handleClick}
             >
                 <planeGeometry args={[width, depth]} />

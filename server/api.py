@@ -5,7 +5,7 @@ import pandas as pd
 import io
 from threading import Lock
 from datetime import datetime, date
-from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Depends, Body
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Depends, Body, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -17,6 +17,8 @@ import shutil
 from database import Database
 from expiry_logic import ALERT_LIMIT, determine_expiry_severity, build_alert_payload
 from main import get_wc_api # Reusing the helper from main.py
+from inventory_api import router as inventory_router
+from inventory_db import InventoryDatabase
 
 app = FastAPI()
 app.add_middleware(
@@ -31,12 +33,46 @@ app.add_middleware(
 os.makedirs("uploads", exist_ok=True)
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
+# Include inventory router
+app.include_router(inventory_router)
+
 STATE_FILE = "state.json"
 SCAN_EVENTS_FILE = "warehouse_scan_events.json"
 scan_events_lock = Lock()
 db = Database()
 db.create_tables_if_not_exist()
 ALERT_LIMIT = 32
+
+# ========== WebSocket Connection Manager ==========
+
+class ConnectionManager:
+    def __init__(self):
+        self.active_connections: List[WebSocket] = []
+
+    async def connect(self, websocket: WebSocket):
+        await websocket.accept()
+        self.active_connections.append(websocket)
+
+    def disconnect(self, websocket: WebSocket):
+        if websocket in self.active_connections:
+            self.active_connections.remove(websocket)
+
+    async def broadcast(self, message: dict):
+        """Send message to all connected clients"""
+        for connection in self.active_connections:
+            try:
+                await connection.send_json(message)
+            except:
+                pass  # Connection may be closed
+
+    async def send_personal(self, websocket: WebSocket, message: dict):
+        """Send message to specific client"""
+        try:
+            await websocket.send_json(message)
+        except:
+            pass
+
+manager = ConnectionManager()
 
 
 class SessionControl(BaseModel):
@@ -529,6 +565,52 @@ async def import_inventory(file: UploadFile = File(...)):
             results["errors"].append(f"Row {index+1}: {str(e)}")
 
     return results
+
+
+# ========== WebSocket Endpoint ==========
+
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    """
+    WebSocket endpoint for real-time inventory updates
+    
+    Clients connect to receive live stock updates, alerts, and notifications.
+    
+    Example client message:
+    {"type": "subscribe", "sku": "PROD-001"}
+    
+    Server broadcasts:
+    {"event": "stock_update", "data": {...}}
+    {"event": "low_stock_alert", "data": {...}}
+    {"event": "expiry_alert", "data": {...}}
+    """
+    await manager.connect(websocket)
+    try:
+        while True:
+            # Keep connection alive, optionally handle client messages
+            try:
+                data = await websocket.receive_json()
+                # Handle subscription/filter messages if needed
+                if data.get("type") == "subscribe":
+                    sku = data.get("sku")
+                    # Could store subscription preferences per connection
+            except WebSocketDisconnect:
+                break
+            except Exception:
+                pass  # Ignore invalid messages
+    finally:
+        manager.disconnect(websocket)
+
+
+@app.get("/ws/broadcast/test")
+async def test_broadcast():
+    """Test endpoint to broadcast a message to all connected clients"""
+    await manager.broadcast({
+        "event": "test",
+        "data": {"message": "Test broadcast from server", "timestamp": datetime.utcnow().isoformat()}
+    })
+    return {"success": True, "message": "Broadcast sent"}
+
 
 if __name__ == "__main__":
     import uvicorn

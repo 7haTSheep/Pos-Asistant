@@ -1,10 +1,12 @@
 import React from 'react';
-import { Save, FolderOpen, Download, LayoutTemplate, Settings } from 'lucide-react';
+import { Save, FolderOpen, Download, LayoutTemplate, Settings, MousePointer2, Pencil, Eraser, Edit2, Eye } from 'lucide-react';
 import { useStore } from '../../store/store';
 
 export const Header = () => {
     const mode = useStore((state) => state.mode);
     const setMode = useStore((state) => state.setMode);
+    const activeTool = useStore((state) => state.activeTool);
+    const setActiveTool = useStore((state) => state.setActiveTool);
 
     return (
         <header className="h-14 bg-gray-800 border-b border-gray-700 flex items-center justify-between px-4 z-20">
@@ -18,18 +20,48 @@ export const Header = () => {
 
                 <div className="h-6 w-px bg-gray-600 mx-2" />
 
+                {/* Mode Toggle */}
                 <div className="flex bg-gray-700 rounded-lg p-1">
                     <button
-                        className={`px-3 py-1 text-xs font-medium rounded transition-all ${mode !== '2d' ? 'bg-gray-600 text-gray-300' : 'bg-blue-600 text-white shadow-sm'}`}
-                    // onClick={() => setView('2d')} // TODO: Implement 2D view
+                        onClick={() => setMode('edit')}
+                        className={`px-3 py-1 text-xs font-medium rounded transition-all flex items-center gap-1 ${mode === 'edit' ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-400 hover:text-white'}`}
                     >
-                        2D View
+                        <Edit2 size={14} />
+                        Edit
                     </button>
                     <button
-                        className={`px-3 py-1 text-xs font-medium rounded transition-all ${mode !== '3d' ? 'bg-gray-600 text-gray-300' : 'bg-blue-600 text-white shadow-sm'}`}
-                    // onClick={() => setView('3d')} // TODO: Implement 3D view
+                        onClick={() => setMode('view')}
+                        className={`px-3 py-1 text-xs font-medium rounded transition-all flex items-center gap-1 ${mode === 'view' ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-400 hover:text-white'}`}
                     >
-                        3D View
+                        <Eye size={14} />
+                        View
+                    </button>
+                </div>
+
+                <div className="h-6 w-px bg-gray-600 mx-2" />
+
+                {/* Tool Selection */}
+                <div className="flex bg-gray-700 rounded-lg p-1">
+                    <button
+                        onClick={() => setActiveTool('pointer')}
+                        className={`p-1.5 rounded transition-all ${activeTool === 'pointer' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'}`}
+                        title="Pointer (P)"
+                    >
+                        <MousePointer2 size={16} />
+                    </button>
+                    <button
+                        onClick={() => setActiveTool('pencil')}
+                        className={`p-1.5 rounded transition-all ${activeTool === 'pencil' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'}`}
+                        title="Draw Walls (W)"
+                    >
+                        <Pencil size={16} />
+                    </button>
+                    <button
+                        onClick={() => setActiveTool('eraser')}
+                        className={`p-1.5 rounded transition-all ${activeTool === 'eraser' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'}`}
+                        title="Erase Walls (E)"
+                    >
+                        <Eraser size={16} />
                     </button>
                 </div>
             </div>

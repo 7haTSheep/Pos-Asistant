@@ -4,30 +4,131 @@ import { getObjectType } from '../utils/objectTypes';
 
 /**
  * Floor Plan Designer Store
- * 
- * State Interface:
- * - objects: Array of Object3DData (id, type, position, rotation, dimensions)
- * - selectedId: string | null (currently selected object ID)
- * - viewMode: '2D' | '3D' (current view mode)
- * - gridSize: number (grid cell size in meters)
- * - snapToGrid: boolean (whether to snap objects to grid)
- * - floorDimensions: { width: number, depth: number } (floor size in meters)
+ *
+ * Complete state management for warehouse floor planning with:
+ * - Objects (furniture, equipment)
+ * - Walls (structural elements)
+ * - Fixtures (mounted items)
+ * - Zones (inventory areas)
+ * - Floors (multiple floor plans)
+ * - History (undo/redo)
  */
 export const useStore = create((set, get) => ({
-    // State
+    // ========== Core State ==========
     objects: [],
-    selectedId: null,
-    viewMode: '2D',
+    walls: [],
+    fixtures: [],
+    zones: [],
+    floors: [{
+        id: 'default-floor',
+        name: 'Default Floor',
+        dimensions: { width: 50, depth: 50 },
+        floorGrid: { cellSize: 1, visible: true },
+    }],
+    activeFloorId: 'default-floor',
+    
+    // Selection & Interaction
+    selection: null,
+    mode: 'edit', // 'edit' | 'view'
+    activeTool: 'pointer', // 'pointer' | 'pencil' | 'eraser'
+    
+    // Placement State
+    placementItem: null,
+    fixturePreview: null,
+    
+    // History (undo/redo)
+    historyPast: [],
+    historyFuture: [],
+    isInteracting: false,
+    
+    // Settings
     gridSize: 1,
     snapToGrid: true,
     floorDimensions: { width: 50, depth: 50 },
 
-    // Actions
+    // ========== History Management ==========
+    
+    beginInteraction: () => {
+        const state = get();
+        const snapshot = {
+            objects: [...state.objects],
+            walls: [...state.walls],
+            fixtures: [...state.fixtures],
+            zones: [...state.zones],
+        };
+        set({
+            historyPast: [...state.historyPast, snapshot],
+            historyFuture: [],
+            isInteracting: true,
+        });
+    },
+    
+    endInteraction: () => {
+        const state = get();
+        if (!state.isInteracting) return;
+        
+        const snapshot = {
+            objects: [...state.objects],
+            walls: [...state.walls],
+            fixtures: [...state.fixtures],
+            zones: [...state.zones],
+        };
+        
+        set((prevState) => ({
+            historyPast: [...prevState.historyPast, snapshot],
+            historyFuture: [],
+            isInteracting: false,
+        }));
+    },
+    
+    undo: () => {
+        const state = get();
+        if (state.historyPast.length === 0) return;
+        
+        const previous = state.historyPast[state.historyPast.length - 1];
+        const current = {
+            objects: [...state.objects],
+            walls: [...state.walls],
+            fixtures: [...state.fixtures],
+            zones: [...state.zones],
+        };
+        
+        set({
+            objects: previous.objects,
+            walls: previous.walls,
+            fixtures: previous.fixtures,
+            zones: previous.zones,
+            historyPast: state.historyPast.slice(0, -1),
+            historyFuture: [current, ...state.historyFuture],
+        });
+    },
+    
+    redo: () => {
+        const state = get();
+        if (state.historyFuture.length === 0) return;
+        
+        const next = state.historyFuture[0];
+        const current = {
+            objects: [...state.objects],
+            walls: [...state.walls],
+            fixtures: [...state.fixtures],
+            zones: [...state.zones],
+        };
+        
+        set({
+            objects: next.objects,
+            walls: next.walls,
+            fixtures: next.fixtures,
+            zones: next.zones,
+            historyPast: [...state.historyPast, current],
+            historyFuture: state.historyFuture.slice(1),
+        });
+    },
+
+    // ========== Object Management ==========
 
     /**
      * Add a new object to the scene
-     * @param {string} type - Object type ID (e.g., 'wall', 'desk')
-     * @param {[number, number, number]} position - Optional position [x, y, z], defaults to [0, 0, 0]
      */
     addObject: (type, position = [0, 0, 0]) => {
         const objectType = getObjectType(type);
@@ -41,70 +142,226 @@ export const useStore = create((set, get) => ({
             type,
             position,
             rotation: [0, 0, 0],
-            dimensions: [...objectType.defaultDimensions]
+            size: objectType.defaultDimensions,
+            floorId: get().activeFloorId,
         };
 
         set((state) => ({
             objects: [...state.objects, newObject],
-            selectedId: newObject.id // Auto-select newly added object
+            selection: { type: 'object', id: newObject.id },
         }));
     },
 
     /**
-     * Update an existing object with partial updates
-     * @param {string} id - Object ID
-     * @param {Partial<Object3DData>} updates - Fields to update
+     * Update an existing object
      */
-    updateObject: (id, updates) => set((state) => ({
-        objects: state.objects.map(obj =>
-            obj.id === id ? { ...obj, ...updates } : obj
-        )
-    })),
+    updateObject: (id, updates, options = {}) => {
+        const skipHistory = options?.skipHistory;
+        
+        set((state) => ({
+            objects: state.objects.map(obj =>
+                obj.id === id ? { ...obj, ...updates } : obj
+            ),
+        }));
+        
+        if (!skipHistory && !get().isInteracting) {
+            get().endInteraction();
+        }
+    },
 
     /**
-     * Remove an object from the scene
-     * @param {string} id - Object ID to remove
+     * Remove an object
      */
     removeObject: (id) => set((state) => ({
         objects: state.objects.filter(obj => obj.id !== id),
-        // Clear selection if the removed object was selected
-        selectedId: state.selectedId === id ? null : state.selectedId
+        selection: state.selection?.id === id ? null : state.selection,
     })),
 
-    /**
-     * Set the currently selected object
-     * @param {string | null} id - Object ID to select, or null to deselect
-     */
-    setSelection: (id) => set({ selectedId: id }),
+    // ========== Wall Management ==========
 
-    /**
-     * Set the view mode
-     * @param {'2D' | '3D'} mode - View mode
-     */
+    addWall: (start, end, options = {}) => {
+        const newWall = {
+            id: uuidv4(),
+            start,
+            end,
+            thickness: options.thickness || 0.35,
+            height: options.height || 1,
+            floorId: get().activeFloorId,
+        };
+
+        set((state) => ({
+            walls: [...state.walls, newWall],
+            selection: { type: 'wall', id: newWall.id },
+        }));
+    },
+
+    updateWall: (id, updates, options = {}) => {
+        const skipHistory = options?.skipHistory;
+        
+        set((state) => ({
+            walls: state.walls.map(wall =>
+                wall.id === id ? { ...wall, ...updates } : wall
+            ),
+        }));
+        
+        if (!skipHistory && !get().isInteracting) {
+            get().endInteraction();
+        }
+    },
+
+    removeWall: (id) => set((state) => ({
+        walls: state.walls.filter(wall => wall.id !== id),
+        selection: state.selection?.id === id ? null : state.selection,
+    })),
+
+    // ========== Fixture Management ==========
+
+    addFixture: (fixtureData) => {
+        const newFixture = {
+            id: uuidv4(),
+            floorId: get().activeFloorId,
+            ...fixtureData,
+        };
+
+        set((state) => ({
+            fixtures: [...state.fixtures, newFixture],
+            selection: { type: 'fixture', id: newFixture.id },
+        }));
+    },
+
+    removeFixture: (id) => set((state) => ({
+        fixtures: state.fixtures.filter(fixture => fixture.id !== id),
+        selection: state.selection?.id === id ? null : state.selection,
+    })),
+
+    // ========== Zone Management ==========
+
+    addZone: (zoneData) => {
+        const newZone = {
+            id: uuidv4(),
+            floorId: get().activeFloorId,
+            ...zoneData,
+        };
+
+        set((state) => ({
+            zones: [...state.zones, newZone],
+            selection: { type: 'zone', id: newZone.id },
+        }));
+    },
+
+    updateZone: (id, updates) => set((state) => ({
+        zones: state.zones.map(zone =>
+            zone.id === id ? { ...zone, ...updates } : zone
+        ),
+    })),
+
+    removeZone: (id) => set((state) => ({
+        zones: state.zones.filter(zone => zone.id !== id),
+        selection: state.selection?.id === id ? null : state.selection,
+    })),
+
+    // ========== Floor Management ==========
+
+    addFloor: (floorData) => {
+        const newFloor = {
+            id: uuidv4(),
+            name: floorData.name || 'New Floor',
+            dimensions: floorData.dimensions || { width: 50, depth: 50 },
+            floorGrid: floorData.floorGrid || { cellSize: 1 },
+            ...floorData,
+        };
+
+        set((state) => {
+            const floors = [...state.floors, newFloor];
+            return {
+                floors,
+                activeFloorId: newFloor.id,
+            };
+        });
+        
+        return newFloor.id;
+    },
+
+    setActiveFloor: (floorId) => set({ activeFloorId: floorId }),
+
+    updateFloor: (id, updates) => set((state) => ({
+        floors: state.floors.map(floor =>
+            floor.id === id ? { ...floor, ...updates } : floor
+        ),
+    })),
+
+    removeFloor: (id) => set((state) => {
+        const floors = state.floors.filter(floor => floor.id !== id);
+        return {
+            floors,
+            activeFloorId: state.activeFloorId === id ? (floors[0]?.id || null) : state.activeFloorId,
+        };
+    }),
+
+    // ========== Selection & Mode ==========
+
+    setSelection: (selection) => set({ selection }),
+
+    setMode: (mode) => set({ mode }),
+
+    setActiveTool: (tool) => set({ activeTool: tool }),
+
+    setPlacementItem: (item) => set({ placementItem: item }),
+
+    setFixturePreview: (preview) => set({ fixturePreview: preview }),
+
+    // ========== Settings ==========
+
     setViewMode: (mode) => set({ viewMode: mode }),
 
-    /**
-     * Set the grid size
-     * @param {number} size - Grid cell size in meters
-     */
     setGridSize: (size) => set({ gridSize: size }),
 
-    /**
-     * Set whether to snap objects to grid
-     * @param {boolean} enabled - Whether snap to grid is enabled
-     */
     setSnapToGrid: (enabled) => set({ snapToGrid: enabled }),
 
-    /**
-     * Set floor dimensions
-     * @param {{ width: number, depth: number }} dimensions - Floor dimensions in meters
-     */
     setFloorDimensions: (dimensions) => set({ floorDimensions: dimensions }),
 
-    /**
-     * Get complete scene data for serialization
-     * @returns {SceneData} Complete scene data
-     */
+    // ========== Layout Serialization ==========
+
+    serializeLayout: () => {
+        const state = get();
+        return {
+            version: '2.0',
+            floors: state.floors,
+            activeFloorId: state.activeFloorId,
+            objects: state.objects,
+            walls: state.walls,
+            fixtures: state.fixtures,
+            zones: state.zones,
+            settings: {
+                gridSize: state.gridSize,
+                snapToGrid: state.snapToGrid,
+                mode: state.mode,
+            },
+        };
+    },
+
+    loadLayout: (layoutData) => {
+        set({
+            floors: layoutData.floors || [],
+            activeFloorId: layoutData.activeFloorId || null,
+            objects: layoutData.objects || [],
+            walls: layoutData.walls || [],
+            fixtures: layoutData.fixtures || [],
+            zones: layoutData.zones || [],
+            selection: null,
+            placementItem: null,
+            fixturePreview: null,
+            historyPast: [],
+            historyFuture: [],
+            isInteracting: false,
+            gridSize: layoutData.settings?.gridSize || 1,
+            snapToGrid: layoutData.settings?.snapToGrid ?? true,
+            mode: layoutData.settings?.mode || 'edit',
+        });
+    },
+
+    // ========== Legacy Compatibility ==========
+
     getSceneData: () => {
         const state = get();
         return {
@@ -113,30 +370,34 @@ export const useStore = create((set, get) => ({
             settings: {
                 gridSize: state.gridSize,
                 snapToGrid: state.snapToGrid,
-                viewMode: state.viewMode,
+                viewMode: state.viewMode || '2D',
                 floorDimensions: state.floorDimensions
             }
         };
     },
 
-    /**
-     * Load scene data from serialized format
-     * @param {SceneData} sceneData - Scene data to load
-     */
     loadScene: (sceneData) => set({
         objects: sceneData.objects || [],
-        selectedId: null,
+        walls: [],
+        fixtures: [],
+        zones: [],
+        selection: null,
         gridSize: sceneData.settings?.gridSize || 1,
         snapToGrid: sceneData.settings?.snapToGrid ?? true,
         viewMode: sceneData.settings?.viewMode || '2D',
-        floorDimensions: sceneData.settings?.floorDimensions || { width: 50, depth: 50 }
+        floorDimensions: sceneData.settings?.floorDimensions || { width: 50, depth: 50 },
+        historyPast: [],
+        historyFuture: [],
+        isInteracting: false,
     }),
 
-    /**
-     * Clear all objects from the scene
-     */
     clearScene: () => set({
         objects: [],
-        selectedId: null
-    })
+        walls: [],
+        fixtures: [],
+        zones: [],
+        selection: null,
+        placementItem: null,
+        fixturePreview: null,
+    }),
 }));
