@@ -21,14 +21,14 @@ export const useStore = create((set, get) => ({
     gridSize: 1,
     snapToGrid: true,
     floorDimensions: { width: 50, depth: 50 },
-    
+
     // Tool state
     activeTool: 'pointer',
     mode: 'view',
     selection: null,
     historyPast: [],
     historyFuture: [],
-    
+
     // Zone state
     zones: [],
     zoneToolActive: false,
@@ -288,16 +288,16 @@ export const useStore = create((set, get) => ({
     finishZoneDrawing: (name = 'Zone') => {
         const state = get();
         if (!state.zoneDrawing) return;
-        
+
         const start = state.zoneDrawing.start;
         const current = state.zoneDrawing.current;
-        
+
         // Calculate bounds from drag rectangle
         const rowMin = Math.floor(Math.min(start.z, current.z));
         const rowMax = Math.floor(Math.max(start.z, current.z));
         const colMin = Math.floor(Math.min(start.x, current.x));
         const colMax = Math.floor(Math.max(start.x, current.x));
-        
+
         const newZone = {
             id: `zone-${Date.now()}`,
             name: `${name} ${state.zones.length + 1}`,
@@ -308,7 +308,7 @@ export const useStore = create((set, get) => ({
             layerMin: 1,
             layerMax: 1,
         };
-        
+
         set({
             zones: [...state.zones, newZone],
             zoneDrawing: null,

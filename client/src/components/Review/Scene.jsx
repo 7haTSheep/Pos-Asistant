@@ -56,6 +56,7 @@ export const Scene = () => {
     const mode = useStore((state) => state.mode);
     const setMode = useStore((state) => state.setMode);
     const activeTool = useStore((state) => state.activeTool);
+    const setActiveTool = useStore((state) => state.setActiveTool);
     const addWall = useStore((state) => state.addWall);
     const updateWall = useStore((state) => state.updateWall);
     const removeWall = useStore((state) => state.removeWall);
@@ -75,6 +76,8 @@ export const Scene = () => {
 
     const [draggedId, setDraggedId] = React.useState(null);
     const [pencilStart, setPencilStart] = React.useState(null);
+    const [pencilCurrent, setPencilCurrent] = React.useState(null);
+    const [isPencilDrawing, setIsPencilDrawing] = React.useState(false);
     const [activeZone, setActiveZone] = React.useState(null);
     const [pencilHover, setPencilHover] = React.useState(null);
     const [wallDrag, setWallDrag] = React.useState(null);
@@ -418,8 +421,13 @@ export const Scene = () => {
             return;
         }
 
-        if (activeTool === 'pencil' && isEditMode && pencilStart) {
-            setPencilHover(snapPoint(point));
+        if (activeTool === 'pencil' && isEditMode) {
+            const snapped = snapPoint(point);
+            if (isPencilDrawing && pencilStart) {
+                setPencilCurrent(snapped);
+            } else {
+                setPencilHover(snapped);
+            }
         }
     };
 
@@ -508,6 +516,28 @@ export const Scene = () => {
         setPencilHover(alignedEnd);
     };
 
+    const handleFloorPointerDown = (point) => {
+        if (activeTool === 'pencil' && isEditMode && !isPencilDrawing) {
+            const snapped = snapPoint(point);
+            setIsPencilDrawing(true);
+            setPencilStart(snapped);
+            setPencilCurrent(snapped);
+        }
+    };
+
+    const handleFloorPointerUp = () => {
+        if (activeTool === 'pencil' && isEditMode && isPencilDrawing && pencilStart && pencilCurrent) {
+            const alignedEnd = toOrthogonalEnd(pencilStart, pencilCurrent);
+            if (pencilStart[0] !== alignedEnd[0] || pencilStart[1] !== alignedEnd[1]) {
+                addWall(pencilStart, alignedEnd);
+            }
+            setIsPencilDrawing(false);
+            setPencilStart(null);
+            setPencilCurrent(null);
+        }
+        if (onDragEnd) onDragEnd();
+    };
+
     const handleZoneClick = (zone, event) => {
         event.stopPropagation();
         if (mode !== 'view') {
@@ -531,11 +561,35 @@ export const Scene = () => {
             if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
             if (e.key === '?') return;
 
+            // Tool switching shortcuts (work in edit mode)
+            if (isEditMode) {
+                if (e.key === 'p' || e.key === 'P') {
+                    e.preventDefault();
+                    setActiveTool('pointer');
+                    setSelection(null);
+                    return;
+                }
+                if (e.key === 'w' || e.key === 'W') {
+                    e.preventDefault();
+                    setActiveTool('pencil');
+                    setSelection(null);
+                    return;
+                }
+                if (e.key === 'e' || e.key === 'E') {
+                    e.preventDefault();
+                    setActiveTool('eraser');
+                    setSelection(null);
+                    return;
+                }
+            }
+
             if (e.key === 'Escape') {
                 e.preventDefault();
                 setSelection(null);
                 setPencilStart(null);
                 setPencilHover(null);
+                setPencilCurrent(null);
+                setIsPencilDrawing(false);
                 setDraggedId(null);
                 setWallDrag(null);
                 setPlacementItem(null);
@@ -613,6 +667,7 @@ export const Scene = () => {
         updateObject,
         removeObject,
         setSelection,
+        setActiveTool,
         cellSize,
         removeWall,
         removeFixture,
@@ -630,7 +685,11 @@ export const Scene = () => {
         };
     }, [handleDragEnd]);
 
-    const previewEnd = pencilStart && pencilHover ? toOrthogonalEnd(pencilStart, pencilHover) : null;
+    const previewEnd = isPencilDrawing && pencilStart && pencilCurrent
+        ? toOrthogonalEnd(pencilStart, pencilCurrent)
+        : pencilStart && pencilHover
+            ? toOrthogonalEnd(pencilStart, pencilHover)
+            : null;
 
     return (
         <div
@@ -648,7 +707,7 @@ export const Scene = () => {
             )}
             {!placementItem && activeTool === 'pencil' && (
                 <div className="wall-draw-hint">
-                    Pencil: click to start, click again to place orthogonal segments, Esc to stop.
+                    Pencil: click and drag to draw walls. Release to place.
                 </div>
             )}
             {!placementItem && activeTool === 'eraser' && (
@@ -680,8 +739,9 @@ export const Scene = () => {
                     <WarehouseFloor
                         floor={activeFloor}
                         onDragMove={handleFloorMove}
-                        onDragEnd={handleDragEnd}
+                        onDragEnd={handleFloorPointerUp}
                         onClickEmpty={handleFloorClick}
+                        onPointerDown={handleFloorPointerDown}
                     />
 
                     {visibleWalls.map((wall) => {

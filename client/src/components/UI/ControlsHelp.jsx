@@ -4,6 +4,13 @@ import { useStore } from '../../store/store';
 
 const shortcuts = [
     {
+        category: 'Tools', items: [
+            { keys: ['P'], desc: 'Pointer tool' },
+            { keys: ['W'], desc: 'Pencil (draw walls)' },
+            { keys: ['E'], desc: 'Eraser tool' },
+        ]
+    },
+    {
         category: 'Movement', items: [
             { keys: ['Up', 'Down', 'Left', 'Right'], desc: 'Move selected object (0.5 units)' },
             { keys: ['Shift', '+', 'Arrows'], desc: 'Fine move (0.1 units)' },
@@ -12,14 +19,14 @@ const shortcuts = [
     {
         category: 'Actions', items: [
             { keys: ['R'], desc: 'Rotate 90 degrees' },
-            { keys: ['Del'], desc: 'Delete selected object' },
-            { keys: ['Esc'], desc: 'Deselect' },
+            { keys: ['Del'], desc: 'Delete selected object/wall' },
+            { keys: ['Esc'], desc: 'Deselect / Cancel tool' },
         ]
     },
     {
         category: 'Mouse', items: [
-            { keys: ['Left Drag'], desc: 'Move object on floor' },
-            { keys: ['Left Click'], desc: 'Select object' },
+            { keys: ['Left Drag'], desc: 'Move object / Draw wall' },
+            { keys: ['Left Click'], desc: 'Select object / Place wall' },
             { keys: ['View'], desc: 'Camera is locked to top-down' },
         ]
     },
