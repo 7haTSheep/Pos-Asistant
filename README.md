@@ -1,128 +1,225 @@
 # Pos-Assistant
 
-Monorepo for a POS and warehouse workflow system with:
-- A 3D warehouse planner (`warehouse_viz`)
-- A Flutter inventory/mobile scanning app (`mobile_app`)
-- A Python automation + API backend (`automation_service`)
+Monorepo for a POS and warehouse workflow system with batch-level inventory management:
 
-## Codebase Functionality
+- **`client`**: React + Three.js warehouse planner with layout library and zone tools
+- **`server`**: FastAPI + automation services + warehouse agent
+- **`mobile_app`**: Flutter inventory/scanning app with expiry tracking
+- **`dashboard`**: Streamlit UI for inventory management and monitoring
 
-### Warehouse Planner (`warehouse_viz`)
-React + Three.js floor-planning app for warehouse layout and slot mapping.
+## Quick Start (Web + API)
 
-Implemented capabilities:
-- Multi-floor planning (add, rename, resize, delete floors)
-- Grid-based floor with adjustable cell size and snapping
-- Wall editing tools (pencil, pointer, eraser)
-- `Pencil` to draw orthogonal wall segments
-- `Pointer` to select and slide walls
-- `Eraser` to remove walls (click or sweep)
-- Door/window/opening fixtures attachable to walls
-- Catalog-driven placement (storage, cold-chain, handling, safety, structure)
-- Object placement, drag/reposition, rotate, resize, metadata editing
-- Undo/redo history
-- Per-object storage grid (rows/cols/layers)
-- Item-to-slot assignment with generated location codes
-- Mobile scan sync polling from backend `/warehouse/scan-events`
+Run both backend and frontend together:
 
-Run:
 ```bash
-cd warehouse_viz
+python start.py
+```
+
+This starts:
+1. Backend API at `http://localhost:8000`
+2. Frontend app at `http://localhost:5173`
+
+`start.py` opens the frontend automatically in your browser.
+Use `Ctrl+C` to stop both processes.
+
+## Prerequisites
+
+- Python 3.10+
+- Node.js 18+
+- npm
+- MySQL (XAMPP/WAMP or standalone)
+- Flutter SDK (only for `mobile_app`)
+
+Install dependencies:
+
+```bash
+# Backend
+cd server
+pip install -r requirements.txt
+
+# Frontend
+cd ../client
 npm install
+
+# Mobile (optional)
+cd ../mobile_app
+flutter pub get
+```
+
+## Repository Layout
+
+```text
+.
+|-- server/           # FastAPI endpoints, automation, warehouse agent, dashboard
+|-- client/           # React + Vite + Three.js warehouse planner
+|-- mobile_app/       # Flutter mobile application
+|-- start.py          # Unified launcher for server + client
+|-- README.md
+|-- CHANGELOG.md
+|-- ROADMAP_SKETCH.md
+`-- WAREHOUSE_AGENT_SPEC.md
+```
+
+## Run Services Individually
+
+### Backend (`server`)
+
+```bash
+cd server
+python api.py
+```
+
+Optional services:
+
+```bash
+# Background automation / scheduler (runs every 10min products, hourly expiry)
+python main.py
+
+# Streamlit dashboard (inventory management + monitoring)
+streamlit run dashboard.py
+```
+
+### Frontend (`client`)
+
+```bash
+cd client
 npm run dev
 ```
-App URL: `http://localhost:5173`
-
-Optional env:
-- `VITE_WAREHOUSE_API_URL` (default: `http://localhost:8000`)
 
 ### Mobile App (`mobile_app`)
-Flutter app for inventory creation, lookup, local cataloging, and scanning workflows.
 
-Implemented capabilities:
-- User auth against backend (`/login`, `/register`)
-- Add item flow
-- Photo capture
-- SKU scan/manual/generate
-- OpenFoodFacts lookup by SKU
-- WooCommerce product creation
-- Optional share-to-global with image upload (`/share-item`)
-- Barcode scanner screen
-- OCR/text-recognition screen for label text capture
-- Smart scanner flow for capture + recognition + similar local products
-- Inventory import screen (uploads CSV/Excel to backend import endpoint)
-- Local product browser/editor backed by per-user local Drift DB
-- Warehouse scan mode
-- Live camera barcode scanning
-- Captures object ID + slot row/col/layer + quantity
-- Sends scan events to backend `/warehouse/scan-events`
- - Expiry-aware intake: date picker, `isMeat` toggle, backend reporting, and local alert scheduling via `flutter_local_notifications`
- - Manifest flow: dispatch screen (marks `in-transit`), verification screen (matches manifest entries and confirms WooCommerce stock sync)
-
-Run:
 ```bash
 cd mobile_app
 flutter pub get
 flutter run
 ```
 
-Important config file:
-- `mobile_app/lib/config.dart` (WooCommerce URL/keys and automation API URL)
+## Features
 
-### Automation Service (`automation_service`)
-Python services for API endpoints, automation scheduling, expiry notifications, and manifest handling.
+### Warehouse Agent (v3.1.0)
+Batch-level inventory management with FIFO tracking:
 
-Implemented capabilities:
-- FastAPI server (`api.py`) with:
-  - Layout persistence (`/floorplan`, `/floorplan/save`, `/floorplan/load/{id}`) backed by `floor_plans`
-  - Zone inventory lookup (`/zone/inventory`)
-  - Manifest lifecycle endpoints (`/manifest/dispatch`, `/manifest/open`, `/manifest/verify`)
-  - Expiry reporting and alerting (`/inventory/expiry`, `/expiries`, `/expiries/ack`)
-  - Existing auth, scan events, sharing, session controls, import, etc.
-- Background scheduler (`main.py`):
-  - Enriches the alert log in `state.json` with severity-aware expiry notifications for standard vs. meat items
-  - Logs alerts to the console and the dashboard (cap at `ALERT_LIMIT = 32`)
-  - Reuses WooCommerce helpers for manifest verification when items reach storefronts
-- Streamlit dashboard (`dashboard.py`):
-  - All prior inventory/session views plus a new “Expiry Alerts” tab showing live alerts and history
+- **Intake**: Add stock to storage slots with batch metadata (expiry, supplier)
+- **Dispatch**: Remove stock using FIFO logic for orders/manifests
+- **Transfer**: Move stock from storage to front (supports batch splitting)
+- **Sales**: Sell single units from front batches (partial box support)
+- **Adjustments**: Manual stock corrections (supervisor role required)
+- **Real-time**: WebSocket updates for multi-device synchronization
+- **Audit Trail**: Complete transaction history with user/device tracking
 
-Backend run options:
-```bash
-cd automation_service
-pip install -r requirements.txt
+### Floor Plan Designer (v3.0.0)
+3D warehouse layout planning:
 
-# API server
-python api.py
+- **Layout Library**: Save/load/activate floor plans
+- **Zone Tool**: Draw zones on warehouse floor for inventory queries
+- **Object Placement**: Walls, fixtures, furniture, equipment
+- **2D/3D View**: Toggle between planning modes
 
-# Scheduler worker (separate terminal)
-python main.py
+### Inventory Management
+- **Expiry Tracking**: Date-based tracking with meat/perishable flags
+- **Automated Alerts**: 48h for meat, 7d/30d for standard items
+- **WooCommerce Sync**: Automatic stock updates on dispatch verification
 
-# Optional Streamlit dashboard
-streamlit run dashboard.py
-```
+### Mobile App
+- **Barcode Scanning**: Add items via barcode lookup
+- **Expiry Metadata**: Date picker + is_meat toggle on add
+- **Manifest Flow**: Dispatch and verification screens
+- **Notifications**: Local notifications for expiry reminders
 
-API base URL (default): `http://localhost:8000`
-Dashboard URL (default): `http://localhost:8501`
+## API Surface
+
+### Warehouse Agent Endpoints
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/inventory/intake` | POST | Add stock to storage with batch creation |
+| `/inventory/dispatch` | POST | Remove stock using FIFO logic |
+| `/inventory/transfer-to-front` | POST | Move storage→front with batch splitting |
+| `/inventory/sell-single` | POST | Sell partial boxes from front |
+| `/inventory/adjustment` | POST | Manual adjustments (role-based) |
+| `/inventory/sku/{sku}` | GET | Live stock summary by SKU |
+| `/inventory/slots/{slot_id}` | GET | Slot-level stock breakdown |
+| `/inventory/slots` | GET | List all slots (filterable by type) |
+| `/inventory/transactions` | GET | Query audit log |
+| `/ws` | WebSocket | Real-time stock updates |
+
+### Core Endpoints
+- **Auth**: `/register`, `/login`
+- **Floor plans**: `/floorplan`, `/floorplan/save`, `/floorplan/load/{plan_id}`
+- **Warehouse scans**: `/warehouse/scan-events` (POST/GET)
+- **Zone lookup**: `/zone/inventory?row_min=X&row_max=Y...`
+- **Manifest flow**: `/manifest/dispatch`, `/manifest/open`, `/manifest/verify`
+- **Expiry flow**: `/inventory/expiry`, `/expiries`, `/expiries/ack`
+- **Session/import**: `/start`, `/stop`, `/import-inventory`
+- **Health**: `/status`
+
+Backend default URL: `http://localhost:8000`
+WebSocket URL: `ws://localhost:8000/ws`
 
 ## Testing
 
-- `flutter test` (mobile_app) was attempted from the workspace but the command ran until interrupted; no pass/fail report is available. Please rerun the suite after dependencies are restored.
+```bash
+# Frontend tests
+cd client
+npm run test:run
+
+# Backend smoke test (API must be running)
+cd ../server
+python test_backend.py
+```
+
+## Database Setup
+
+The application expects a local MySQL database named `dummydatabase3`:
+
+```sql
+CREATE DATABASE IF NOT EXISTS dummydatabase3;
+```
+
+Default credentials (configured in `server/database.py`):
+- Host: `localhost`
+- User: `root`
+- Password: `` (empty)
+
+Tables are created automatically on first run.
+
+## Configuration
+
+### Backend
+Create `.env` file in `server/`:
+```
+WC_URL=http://your-woocommerce-site.com
+WC_CONSUMER_KEY=ck_xxxxx
+WC_CONSUMER_SECRET=cs_xxxxx
+```
+
+### Frontend
+Create `.env` file in `client/`:
+```
+VITE_API_URL=http://localhost:8000
+VITE_WAREHOUSE_API_URL=http://localhost:8000
+```
+
+### Mobile
+Configure `mobile_app/lib/config.dart`:
+```dart
+class AppConfig {
+  static const String automationApiUrl = 'http://YOUR_IP:8000';
+}
+```
 
 ## Integration Notes
 
-- `mobile_app` and `warehouse_viz` both integrate with `automation_service` for warehouse scan events.
-- `mobile_app` and `automation_service` both integrate with WooCommerce.
-- `automation_service/database.py` expects local MySQL DB `dummydatabase3` (`root` / empty password by default).
-- Multiple flows use localhost assumptions (`10.0.2.2` for Android emulator in Flutter config).
+- `client` and `mobile_app` both integrate with `server`.
+- `server/database.py` expects a local MySQL database `dummydatabase3`.
+- Flutter environment values are configured in `mobile_app/lib/config.dart`.
+- WebSocket connections for real-time updates: `ws://localhost:8000/ws`
 
-## Repo Structure
+## Documentation
 
-```text
-.
-|-- warehouse_viz/       # React + R3F warehouse planner
-|-- mobile_app/          # Flutter mobile inventory client
-`-- automation_service/  # FastAPI + scheduler + Streamlit services
-```
+- `CHANGELOG.md` - Version history and changes
+- `ROADMAP_SKETCH.md` - V3 roadmap and planned features
+- `WAREHOUSE_AGENT_SPEC.md` - Warehouse agent specification
 
 ## License
+
 MIT

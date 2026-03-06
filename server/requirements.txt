@@ -1,0 +1,22 @@
+requests
+woocommerce
+streamlit
+beautifulsoup4
+python-dotenv
+openai
+fastapi
+uvicorn
+websockets
+mysql-connector-python
+
+pandas
+openpyxl
+python-multipart
+pyjwt
+
+# Testing
+pytest==7.4.0
+pytest-asyncio==0.21.0
+pytest-cov==4.1.0
+pytest-mock==3.11.0
+httpx==0.25.0  # For async API testing
